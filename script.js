@@ -3,16 +3,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // State management
   const state = {
     visitedCountries: new Set(),
-    mapSVG: null,
-    mapWidth: 1200,
-    mapHeight: 700,
-    mapTransform: { k: 1, x: 0, y: 0 }, // Zoom and pan state
-    countryData: null,
-    countryElements: {},
     flagMarkers: {},
-    path: null, // Store path globally for access in other functions
-    projection: null, // Store projection globally
-    allCountries: [] // Store all countries for the list view
+    countryElements: {},
+    allCountries: [],
+    mapTransform: { k: 1, x: 0, y: 0 }, // Zoom and pan state
+    mapWidth: 960,
+    mapHeight: 480,
+    mapSVG: null,
+    mapGroup: null,
+    projection: null,
+    path: null,
+    countries: null,
+    countryData: null
   };
 
   // Initialize the app
@@ -33,64 +35,115 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Initializes the interactive world map using D3.js
    */
-  function initMap() {
-    // Set up the map projection
-    state.projection = d3.geoNaturalEarth1()
-      .scale(state.mapWidth / 2 / Math.PI)
-      .translate([state.mapWidth / 2, state.mapHeight / 2]);
-    
-    state.path = d3.geoPath().projection(state.projection);
-
-    // Create the SVG element for the map
-    const svg = d3.select('#map')
+  function drawMap() {
+    // Using a global variable to store our SVG element
+    state.mapSVG = d3.select('#map-container')
       .append('svg')
       .attr('width', '100%')
       .attr('height', '100%')
-      .attr('viewBox', `0 0 ${state.mapWidth} ${state.mapHeight}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet');
+      .attr('viewBox', [0, 0, 960, 480])
+      .attr('preserveAspectRatio', 'xMinYMin meet');
+
+    // Create a group for the zoom transform
+    state.mapGroup = state.mapSVG.append('g');
     
-    state.mapSVG = svg;
-    
-    // Create a group for the map elements that can be transformed
-    const mapGroup = svg.append('g');
-    
-    // Add zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([1, 8])
-      .on('zoom', (event) => {
-        state.mapTransform = event.transform;
-        mapGroup.attr('transform', event.transform);
-      });
-    
-    svg.call(zoom);
-    
-    // Load the world map data
-    d3.json('https://unpkg.com/world-atlas@2/countries-110m.json')
-      .then(data => {
+    // Create a layer for flag markers
+    state.mapGroup.append('g')
+      .attr('class', 'flag-markers');
+
+    // Define the projection
+    state.projection = d3.geoNaturalEarth1()
+      .scale(153)
+      .translate([480, 240]);
+
+    // Store the path generator in the state for later use
+    state.path = d3.geoPath().projection(state.projection);
+
+    // Set up zoom functionality
+    setupZoom();
+
+    // Load world topology data
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(world => {
         // Convert TopoJSON to GeoJSON
-        const countries = topojson.feature(data, data.objects.countries);
-        state.countryData = countries;
+        const countries = topojson.feature(world, world.objects.countries);
+
+        // Track unrecognized countries for debugging
+        const unrecognizedCountries = [];
         
-        // Add countries to the map
-        mapGroup.selectAll('path')
-          .data(countries.features)
-          .enter()
-          .append('path')
-          .attr('class', 'country')
+        // Process country features to ensure they have proper metadata
+        const processedFeatures = countries.features.map(feature => {
+          // Store original name for debugging
+          feature.properties.originalName = feature.properties.name;
+          
+          // Normalize country name
+          let countryName = feature.properties.name;
+          if (WorldData.COUNTRY_NAME_MAP[countryName]) {
+            countryName = WorldData.COUNTRY_NAME_MAP[countryName];
+            feature.properties.name = countryName;
+          }
+          
+          // Validate if the country exists in our data
+          const continent = WorldData.COUNTRY_TO_CONTINENT[countryName];
+          if (!continent) {
+            unrecognizedCountries.push(countryName);
+          }
+          
+          // Add continent info to feature properties for filtering
+          feature.properties.continent = continent || 'Unknown';
+          return feature;
+        });
+
+        // Log unrecognized countries so we can update our mapping
+        if (unrecognizedCountries.length > 0) {
+          console.log('Unrecognized countries:', unrecognizedCountries);
+        }
+
+        // Draw country paths
+        state.countries = state.mapGroup
+          .append('g')
+          .attr('class', 'countries')
+          .selectAll('path')
+          .data(processedFeatures)
+          .join('path')
+          .attr('class', d => {
+            const classes = ['country'];
+            const slugName = d.properties.name.replace(/[\s,'().]/g, '-').toLowerCase();
+            classes.push(slugName);
+            return classes.join(' ');
+          })
+          .attr('data-name', d => d.properties.name)
+          .attr('data-original-name', d => d.properties.originalName)
+          .attr('data-continent', d => d.properties.continent)
           .attr('d', state.path)
-          .attr('id', d => `country-${d.id}`)
-          .on('mouseover', handleCountryMouseOver)
-          .on('mouseout', handleCountryMouseOut)
+          .attr('fill', '#e9e9e9')
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 0.5)
+          .attr('cursor', d => WorldData.COUNTRY_TO_CONTINENT[d.properties.name] ? 'pointer' : 'default')
+          .on('mouseover', function(event, d) {
+            // Tooltip with country name
+            const countryName = d.properties.name;
+            // Only show hover effect if country is recognized and not visited
+            if (WorldData.COUNTRY_TO_CONTINENT[countryName] && !d3.select(this).classed('visited')) {
+              d3.select(this).attr('fill', '#d9d9d9');
+            }
+          })
+          .on('mouseout', function(event, d) {
+            const countryName = d.properties.name;
+            if (WorldData.COUNTRY_TO_CONTINENT[countryName] && !d3.select(this).classed('visited')) {
+              d3.select(this).attr('fill', '#e9e9e9');
+            }
+          })
           .on('click', handleCountryClick);
-        
+
         // Store country elements for later reference and populate allCountries
-        countries.features.forEach(feature => {
+        processedFeatures.forEach(feature => {
           let countryName = feature.properties.name;
           if (WorldData.COUNTRY_NAME_MAP[countryName]) {
             countryName = WorldData.COUNTRY_NAME_MAP[countryName];
           }
           
-          state.countryElements[countryName] = document.getElementById(`country-${feature.id}`);
+          state.countryElements[countryName] = document.querySelector(`[data-name="${countryName}"]`);
           
           // Only add to allCountries if it's in our continent data
           const continent = WorldData.COUNTRY_TO_CONTINENT[countryName];
@@ -179,21 +232,47 @@ document.addEventListener('DOMContentLoaded', () => {
       event.currentTarget.classList.add('visited');
       
       // Add flag marker - use the stored path function from state
-      const centroid = state.path.centroid(d);
-      console.log('Centroid coordinates:', centroid);
+      // Use bounds to find a better position for the flag
+      const bounds = state.path.bounds(d);
+      const centroid = [
+        (bounds[0][0] + bounds[1][0]) / 2,  // x-center
+        (bounds[0][1] + bounds[1][1]) / 2   // y-center
+      ];
+      
+      console.log('Flag position for', countryName, ':', centroid);
       
       if (centroid.length === 2 && !isNaN(centroid[0]) && !isNaN(centroid[1])) {
-        const flag = state.mapSVG.select('.flag-markers')
-          .append('text')
+        // Adjust flag size based on country size
+        const width = Math.abs(bounds[1][0] - bounds[0][0]);
+        const height = Math.abs(bounds[1][1] - bounds[0][1]);
+        const area = width * height;
+        const flagSize = Math.max(12, Math.min(20, Math.log2(area) * 1.5));
+        
+        // Create a marker group with both flag and highlight
+        const markerGroup = state.mapSVG.select('.flag-markers')
+          .append('g')
+          .attr('class', 'flag-marker-group');
+        
+        // Add highlight circle behind flag
+        markerGroup.append('circle')
+          .attr('cx', centroid[0])
+          .attr('cy', centroid[1])
+          .attr('r', flagSize / 2 + 2)
+          .attr('fill', 'white')
+          .attr('stroke', '#e63946')
+          .attr('stroke-width', 1.5);
+        
+        // Add flag emoji
+        const flag = markerGroup.append('text')
           .attr('class', 'flag-marker')
           .attr('x', centroid[0])
           .attr('y', centroid[1])
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'central')
-          .attr('font-size', '18px')
+          .attr('font-size', `${flagSize}px`)
           .text('🏁');
         
-        state.flagMarkers[countryName] = flag.node();
+        state.flagMarkers[countryName] = markerGroup.node();
       }
       
       // Update the corresponding country in allCountries
@@ -246,6 +325,20 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.style.width = `${continentPercent}%`;
       progressBar.textContent = `${continentPercent}%`;
     });
+  }
+
+  /**
+   * Adds zoom behavior to the map
+   */
+  function setupZoom() {
+    const zoom = d3.zoom()
+      .scaleExtent([1, 8])
+      .on('zoom', (event) => {
+        state.mapTransform = event.transform;
+        state.mapGroup.attr('transform', event.transform);
+      });
+    
+    state.mapSVG.call(zoom);
   }
 
   /**
@@ -410,41 +503,67 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Wait for the map to load before applying visited countries
         const checkMapLoaded = setInterval(() => {
-          if (state.countryData) {
+          if (state.countries) {
             clearInterval(checkMapLoaded);
             
             // Mark countries as visited
             visitedArray.forEach(countryName => {
-              const feature = state.countryData.features.find(f => {
-                let name = f.properties.name;
-                if (WorldData.COUNTRY_NAME_MAP[name]) {
-                  name = WorldData.COUNTRY_NAME_MAP[name];
-                }
-                return name === countryName;
-              });
+              // Find the country element
+              const countryElement = d3.select(`[data-name="${countryName}"]`);
               
-              if (feature) {
-                const country = document.getElementById(`country-${feature.id}`);
-                if (country) {
-                  country.classList.add('visited');
-                  state.visitedCountries.add(countryName);
+              if (!countryElement.empty()) {
+                // Get the data object for this country
+                const countryData = countryElement.datum();
+                
+                // Add to visited set
+                state.visitedCountries.add(countryName);
+                
+                // Update styling
+                countryElement.classed('visited', true);
+                countryElement.attr('fill', '#c5e0f0');
+                
+                // Add flag marker using the same code as in handleCountryClick
+                const bounds = state.path.bounds(countryData);
+                const centroid = [
+                  (bounds[0][0] + bounds[1][0]) / 2,
+                  (bounds[0][1] + bounds[1][1]) / 2
+                ];
+                
+                if (centroid.length === 2 && !isNaN(centroid[0]) && !isNaN(centroid[1])) {
+                  // Similar flag marker creation as in handleCountryClick
+                  const width = Math.abs(bounds[1][0] - bounds[0][0]);
+                  const height = Math.abs(bounds[1][1] - bounds[0][1]);
+                  const area = width * height;
+                  const flagSize = Math.max(12, Math.min(20, Math.log2(area) * 1.5));
                   
-                  // Add flag marker
-                  // Use the stored path function
-                  const centroid = state.path.centroid(feature);
-                  if (centroid.length === 2 && !isNaN(centroid[0]) && !isNaN(centroid[1])) {
-                    const flag = state.mapSVG.select('.flag-markers')
-                      .append('text')
-                      .attr('class', 'flag-marker')
-                      .attr('x', centroid[0])
-                      .attr('y', centroid[1])
-                      .attr('text-anchor', 'middle')
-                      .attr('dominant-baseline', 'central')
-                      .attr('font-size', '14px')
-                      .text('🚩');
-                    
-                    state.flagMarkers[countryName] = flag.node();
-                  }
+                  const markerGroup = state.mapSVG.select('.flag-markers')
+                    .append('g')
+                    .attr('class', 'flag-marker-group');
+                  
+                  markerGroup.append('circle')
+                    .attr('cx', centroid[0])
+                    .attr('cy', centroid[1])
+                    .attr('r', flagSize / 2 + 2)
+                    .attr('fill', 'white')
+                    .attr('stroke', '#e63946')
+                    .attr('stroke-width', 1.5);
+                  
+                  const flag = markerGroup.append('text')
+                    .attr('class', 'flag-marker')
+                    .attr('x', centroid[0])
+                    .attr('y', centroid[1])
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .attr('font-size', `${flagSize}px`)
+                    .text('🏁');
+                  
+                  state.flagMarkers[countryName] = markerGroup.node();
+                }
+                
+                // Update the corresponding country in allCountries list
+                const countryInList = state.allCountries.find(country => country.name === countryName);
+                if (countryInList) {
+                  countryInList.visited = true;
                 }
               }
             });
@@ -458,8 +577,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Check for shared data when page loads
-  checkForSharedData();
+  // Initialize the application
+  function initApp() {
+    // Draw the world map
+    drawMap();
+    
+    // Add event listeners for controls
+    document.getElementById('zoom-in').addEventListener('click', () => zoomMap(1.2));
+    document.getElementById('zoom-out').addEventListener('click', () => zoomMap(0.8));
+    document.getElementById('reset-zoom').addEventListener('click', resetZoom);
+    document.getElementById('reset-button').addEventListener('click', resetMap);
+    document.getElementById('done-button').addEventListener('click', showSummary);
+    document.getElementById('view-countries-list').addEventListener('click', showCountriesList);
+    
+    // Close modals when clicking on X or outside
+    document.querySelector('.close-modal').addEventListener('click', closeSummary);
+    document.querySelector('.close-countries-list').addEventListener('click', closeCountriesList);
+    
+    // Handle summary modal actions
+    document.getElementById('download-map').addEventListener('click', downloadMap);
+    document.getElementById('copy-link').addEventListener('click', copyLink);
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', (event) => {
+      const summaryModal = document.getElementById('summary-modal');
+      const countriesModal = document.getElementById('countries-list-modal');
+      if (event.target === summaryModal) {
+        closeSummary();
+      }
+      if (event.target === countriesModal) {
+        closeCountriesList();
+      }
+    });
+    
+    // Check for shared data when page loads
+    checkForSharedData();
+  }
+  
+  // Initialize the app
+  initApp();
   
   /**
    * Shows the countries list modal
@@ -475,10 +631,16 @@ document.addEventListener('DOMContentLoaded', () => {
       continentGroups[continent] = [];
     });
     
+    // Sort countries by name within each continent
     state.allCountries.forEach(country => {
       if (continentGroups[country.continent]) {
         continentGroups[country.continent].push(country);
       }
+    });
+    
+    // Sort each continent's countries alphabetically
+    Object.keys(continentGroups).forEach(continent => {
+      continentGroups[continent].sort((a, b) => a.name.localeCompare(b.name));
     });
     
     // Create continent sections
@@ -497,7 +659,9 @@ document.addEventListener('DOMContentLoaded', () => {
       continentGroups[continent].forEach(country => {
         const countryItem = document.createElement('div');
         countryItem.className = 'country-item';
-        if (country.visited) {
+        countryItem.dataset.countryName = country.name;
+        
+        if (state.visitedCountries.has(country.name)) {
           countryItem.classList.add('visited');
         }
         
@@ -506,32 +670,30 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const countryStatus = document.createElement('span');
         countryStatus.className = 'country-status';
-        countryStatus.textContent = country.visited ? '🏁 Visited' : '⬜ Not visited';
+        countryStatus.textContent = state.visitedCountries.has(country.name) ? '🏁 Visited' : '⬜ Not visited';
         
         countryItem.appendChild(countryName);
         countryItem.appendChild(countryStatus);
         
         // Add click handler to toggle visited status from the list
         countryItem.addEventListener('click', () => {
-          const mapCountry = state.countryData.features.find(f => {
-            let name = f.properties.name;
-            if (WorldData.COUNTRY_NAME_MAP[name]) {
-              name = WorldData.COUNTRY_NAME_MAP[name];
-            }
-            return name === country.name;
-          });
+          // Find the country element on the map
+          const countryElement = d3.select(`[data-name="${country.name}"]`);
           
-          if (mapCountry) {
-            const countryElement = document.getElementById(`country-${mapCountry.id}`);
-            if (countryElement) {
-              // Simulate click on the map
-              const event = new MouseEvent('click');
-              countryElement.dispatchEvent(event);
-              
-              // Update the list item
-              countryItem.classList.toggle('visited');
-              countryStatus.textContent = country.visited ? '🏁 Visited' : '⬜ Not visited';
-            }
+          if (!countryElement.empty()) {
+            // Get the data object
+            const countryData = countryElement.datum();
+            
+            // Create a synthetic click event to leverage the existing click handler
+            const clickEvent = { currentTarget: countryElement.node() };
+            handleCountryClick(clickEvent, countryData);
+            
+            // Update the list item
+            const isVisited = state.visitedCountries.has(country.name);
+            countryItem.classList.toggle('visited', isVisited);
+            countryStatus.textContent = isVisited ? '🏁 Visited' : '⬜ Not visited';
+          } else {
+            console.warn(`Country element not found for: ${country.name}`);
           }
         });
         

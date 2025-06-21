@@ -86,32 +86,79 @@ const TOTAL_COUNTRIES = Object.values(CONTINENTS).reduce(
 
 // Country name normalization map - handles differences between GeoJSON and our data
 const COUNTRY_NAME_MAP = {
+  // North America
   "United States of America": "United States",
+  "USA": "United States",
+  "U.S.A.": "United States",
   "The Bahamas": "Bahamas",
-  "Republic of the Congo": "Congo",
-  "Democratic Republic of the Congo": "Democratic Republic of the Congo",
+  "Dominican Rep.": "Dominican Republic",
+  "Trinidad and Tob.": "Trinidad and Tobago",
+  "St. Kitts and Nevis": "Saint Kitts and Nevis",
+  "St. Lucia": "Saint Lucia",
+  "St. Vin. and Gren.": "Saint Vincent and the Grenadines",
+  
+  // South America
+  "Venezuela, RB": "Venezuela",
+  
+  // Europe
+  "United Kingdom": "United Kingdom",
+  "UK": "United Kingdom",
+  "Bosnia and Herz.": "Bosnia and Herzegovina",
+  "Czech Rep.": "Czech Republic",
+  "Czech Republic": "Czech Republic",
+  "Czechia": "Czech Republic",
+  "Macedonia": "North Macedonia",
+  "Republic of North Macedonia": "North Macedonia",
+  "Slovak Republic": "Slovakia",
   "Republic of Serbia": "Serbia",
+  "Vatican": "Vatican City",
+  "Holy See": "Vatican City",
+  "Republic of Moldova": "Moldova",
+  
+  // Africa
+  "Congo, Dem. Rep.": "Democratic Republic of the Congo",
+  "Democratic Republic of the Congo": "Democratic Republic of the Congo",
+  "Congo, Rep.": "Congo",
+  "Republic of the Congo": "Congo",
   "Ivory Coast": "Ivory Coast",
   "Côte d'Ivoire": "Ivory Coast",
   "Tanzania": "Tanzania",
   "United Republic of Tanzania": "Tanzania",
-  "Myanmar": "Myanmar",
-  "Myanmar (Burma)": "Myanmar",
-  "South Korea": "South Korea",
-  "Republic of Korea": "South Korea",
-  "North Korea": "North Korea",
-  "Democratic People's Republic of Korea": "North Korea",
-  "United Kingdom": "United Kingdom",
-  "Republic of Moldova": "Moldova",
-  "Macedonia": "North Macedonia",
-  "Czech Republic": "Czech Republic",
-  "Czechia": "Czech Republic",
-  "Timor-Leste": "Timor-Leste",
-  "East Timor": "Timor-Leste",
+  "Central African Rep.": "Central African Republic",
+  "Congo-Brazzaville": "Congo",
+  "Congo-Kinshasa": "Democratic Republic of the Congo",
+  "Cabo Verde": "Cape Verde",
   "Eswatini": "Eswatini",
   "Swaziland": "Eswatini",
+  "Eq. Guinea": "Equatorial Guinea",
+  "S. Sudan": "South Sudan",
+  "São Tomé and Principe": "Sao Tome and Principe",
+  
+  // Asia
+  "Myanmar": "Myanmar",
+  "Myanmar (Burma)": "Myanmar",
+  "Burma": "Myanmar",
+  "South Korea": "South Korea",
+  "Republic of Korea": "South Korea",
+  "Korea, Rep.": "South Korea",
+  "Korea, South": "South Korea",
+  "North Korea": "North Korea",
+  "Democratic People's Republic of Korea": "North Korea",
+  "Korea, Dem. Rep.": "North Korea",
+  "Korea, North": "North Korea",
+  "Brunei Darussalam": "Brunei",
+  "UAE": "United Arab Emirates",
   "Palestine": "Palestine",
-  "State of Palestine": "Palestine"
+  "State of Palestine": "Palestine",
+  "Timor-Leste": "Timor-Leste",
+  "East Timor": "Timor-Leste",
+  "Lao PDR": "Laos",
+  "Vietnam": "Vietnam",
+  "Viet Nam": "Vietnam",
+  
+  // Oceania
+  "Micronesia, Fed. Sts.": "Micronesia",
+  "Federated States of Micronesia": "Micronesia"
 };
 
 // Export the data to global scope by assigning to window object
