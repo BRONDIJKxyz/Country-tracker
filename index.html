@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Travel Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 World Travel Tracker</h1>
+            <p>Click on countries you've visited to mark them with a flag</p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value" id="countries-visited">0</div>
+                <div class="stat-label">Countries</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="global-percent">0%</div>
+                <div class="stat-label">Global</div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-tooltip" id="map-tooltip"></div>
+            <div class="map-controls">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+                <button id="reset-zoom">↻</button>
+            </div>
+        </div>
+
+        <div class="continents-stats">
+            <h3>Continents Progress</h3>
+            <div class="continent-bars">
+                <div class="continent-bar">
+                    <div class="continent-name">Africa</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="africa-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="continent-bar">
+                    <div class="continent-name">Asia</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="asia-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="continent-bar">
+                    <div class="continent-name">Europe</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="europe-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="continent-bar">
+                    <div class="continent-name">N. America</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="namerica-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="continent-bar">
+                    <div class="continent-name">S. America</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="samerica-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+                <div class="continent-bar">
+                    <div class="continent-name">Oceania</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="oceania-progress" style="width: 0%;">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="reset-button" class="button secondary">Reset Map</button>
+            <button id="done-button" class="button primary">Done</button>
+        </div>
+
+        <!-- Summary modal (hidden by default) -->
+        <div class="modal" id="summary-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>My Travel Footprint</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="summary-map" id="summary-map"></div>
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <span class="summary-value" id="summary-countries">0 of 195</span>
+                            <span class="summary-label">Countries Visited</span>
+                        </div>
+                        <div class="summary-stat">
+                            <span class="summary-value" id="summary-percent">0%</span>
+                            <span class="summary-label">of the World</span>
+                        </div>
+                    </div>
+                    <div class="summary-continents">
+                        <h3>Continents Visited</h3>
+                        <div class="summary-continent-stats" id="summary-continent-stats">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="share-buttons">
+                        <button id="download-map" class="button">Download Image</button>
+                        <button id="copy-link" class="button">Copy Link</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="world-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

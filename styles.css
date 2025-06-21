@@ -1,0 +1,381 @@
+/* Base styles */
+:root {
+  --primary-color: #e63946;
+  --secondary-color: #457b9d;
+  --light-color: #f1faee;
+  --dark-color: #1d3557;
+  --grey-color: #8d99ae;
+  --bg-color: #f8f9fa;
+  --visited-color: #a8dadc;
+  --border-radius: 8px;
+  --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--dark-color);
+  line-height: 1.6;
+  padding: 0 10px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  margin-bottom: 5px;
+  font-size: 2.2rem;
+}
+
+header p {
+  color: var(--grey-color);
+  font-size: 1rem;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--grey-color);
+}
+
+/* Map styles */
+.map-container {
+  position: relative;
+  border-radius: var(--border-radius);
+  background: white;
+  box-shadow: var(--box-shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+  height: 50vh;
+  min-height: 350px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-tooltip {
+  position: absolute;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: var(--box-shadow);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.map-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.map-controls button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: white;
+  box-shadow: var(--box-shadow);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Country styles */
+.country {
+  fill: #d3d3d3;
+  stroke: white;
+  stroke-width: 0.5;
+  transition: fill 0.3s;
+}
+
+.country:hover {
+  fill: #b8b8b8;
+  cursor: pointer;
+}
+
+.country.visited {
+  fill: var(--visited-color);
+}
+
+.flag-marker {
+  fill: var(--primary-color);
+  stroke: none;
+}
+
+/* Continent stats */
+.continents-stats {
+  margin-bottom: 30px;
+}
+
+.continents-stats h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.continent-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.continent-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.continent-name {
+  width: 90px;
+  font-size: 0.9rem;
+}
+
+.progress-container {
+  flex: 1;
+  background: #e9ecef;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--secondary-color);
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 20px;
+  transition: width 0.5s;
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.button.primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.button.primary:hover {
+  background: #d32f2f;
+}
+
+.button.secondary {
+  background: var(--light-color);
+  color: var(--dark-color);
+  border: 1px solid var(--grey-color);
+}
+
+.button.secondary:hover {
+  background: #e6e6e6;
+}
+
+/* Modal styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  overflow: auto;
+}
+
+.modal-content {
+  background: white;
+  margin: 10% auto;
+  max-width: 800px;
+  width: 90%;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(-50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.modal-header h2 {
+  font-size: 1.6rem;
+}
+
+.close-modal {
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* Summary styles */
+.summary-map {
+  height: 300px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.summary-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.summary-stat {
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: block;
+}
+
+.summary-label {
+  color: var(--grey-color);
+  font-size: 0.9rem;
+}
+
+.summary-continents h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.summary-continent-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.summary-continent-item {
+  text-align: center;
+  padding: 15px;
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+}
+
+.summary-continent-item .continent-name {
+  font-weight: 600;
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.summary-continent-item .continent-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.share-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px 10px;
+  }
+  
+  header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .stat-value {
+    font-size: 1.8rem;
+  }
+  
+  .modal-content {
+    margin: 15% auto;
+    width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-bar {
+    gap: 20px;
+  }
+  
+  .continent-bars {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-continent-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
