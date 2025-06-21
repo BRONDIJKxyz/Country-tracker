@@ -114,10 +114,13 @@ const COUNTRY_NAME_MAP = {
   "State of Palestine": "Palestine"
 };
 
-// Export the data
-const WorldData = {
+// Export the data to global scope by assigning to window object
+window.WorldData = {
   CONTINENTS,
   COUNTRY_TO_CONTINENT,
   TOTAL_COUNTRIES,
   COUNTRY_NAME_MAP
 };
+
+// Log for debugging
+console.log('WorldData loaded, total countries:', TOTAL_COUNTRIES);

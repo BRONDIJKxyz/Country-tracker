@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     mapTransform: { k: 1, x: 0, y: 0 }, // Zoom and pan state
     countryData: null,
     countryElements: {},
-    flagMarkers: {}
+    flagMarkers: {},
+    path: null, // Store path globally for access in other functions
+    projection: null // Store projection globally
   };
 
   // Initialize the app
@@ -30,11 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function initMap() {
     // Set up the map projection
-    const projection = d3.geoNaturalEarth1()
+    state.projection = d3.geoNaturalEarth1()
       .scale(state.mapWidth / 2 / Math.PI)
       .translate([state.mapWidth / 2, state.mapHeight / 2]);
     
-    const path = d3.geoPath().projection(projection);
+    state.path = d3.geoPath().projection(state.projection);
 
     // Create the SVG element for the map
     const svg = d3.select('#map')
@@ -72,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .enter()
           .append('path')
           .attr('class', 'country')
-          .attr('d', path)
+          .attr('d', state.path)
           .attr('id', d => `country-${d.id}`)
           .on('mouseover', handleCountryMouseOver)
           .on('mouseout', handleCountryMouseOut)
@@ -126,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
       countryName = WorldData.COUNTRY_NAME_MAP[countryName];
     }
 
+    console.log('Country clicked:', countryName);
+
     // Check if this country is in our data
     const continent = WorldData.COUNTRY_TO_CONTINENT[countryName];
     if (!continent) {
@@ -147,8 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
       state.visitedCountries.add(countryName);
       event.currentTarget.classList.add('visited');
       
-      // Add flag marker
-      const centroid = path.centroid(d);
+      // Add flag marker - use the stored path function from state
+      const centroid = state.path.centroid(d);
+      console.log('Centroid coordinates:', centroid);
+      
       if (centroid.length === 2 && !isNaN(centroid[0]) && !isNaN(centroid[1])) {
         const flag = state.mapSVG.select('.flag-markers')
           .append('text')
@@ -157,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .attr('y', centroid[1])
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'central')
-          .attr('font-size', '14px')
+          .attr('font-size', '16px')
           .text('🚩');
         
         state.flagMarkers[countryName] = flag.node();
@@ -166,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update statistics
     updateStats();
+    console.log('Visited countries:', state.visitedCountries.size);
   }
 
   /**
@@ -173,7 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function updateStats() {
     const visitedCount = state.visitedCountries.size;
-    const globalPercent = Math.round((visitedCount / WorldData.TOTAL_COUNTRIES) * 100);
+    
+    // Verify we have access to the WorldData object
+    if (!window.WorldData || !WorldData.TOTAL_COUNTRIES) {
+      console.error('WorldData is not properly defined:', WorldData);
+      return;
+    }
+    
+    const globalPercent = Math.round((visitedCount / WorldData.TOTAL_COUNTRIES) * 100) || 0;
+    
+    console.log('Updating stats:', visitedCount, 'countries,', globalPercent + '%');
     
     // Update global stats
     document.getElementById('countries-visited').textContent = visitedCount;
@@ -379,13 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   state.visitedCountries.add(countryName);
                   
                   // Add flag marker
-                  const path = d3.geoPath().projection(
-                    d3.geoNaturalEarth1()
-                      .scale(state.mapWidth / 2 / Math.PI)
-                      .translate([state.mapWidth / 2, state.mapHeight / 2])
-                  );
-                  
-                  const centroid = path.centroid(feature);
+                  // Use the stored path function
+                  const centroid = state.path.centroid(feature);
                   if (centroid.length === 2 && !isNaN(centroid[0]) && !isNaN(centroid[1])) {
                     const flag = state.mapSVG.select('.flag-markers')
                       .append('text')
