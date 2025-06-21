@@ -78,8 +78,8 @@ header p {
   box-shadow: var(--box-shadow);
   margin-bottom: 20px;
   overflow: hidden;
-  height: 50vh;
-  min-height: 350px;
+  height: 70vh;
+  min-height: 500px;
 }
 
 #map {
@@ -344,6 +344,72 @@ header p {
   justify-content: center;
   gap: 15px;
   flex-wrap: wrap;
+}
+
+/* Countries list styles */
+.countries-list-content {
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+}
+
+.countries-list-instructions {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--grey-color);
+}
+
+#countries-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.continent-section {
+  margin-bottom: 25px;
+}
+
+.continent-section h3 {
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.countries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.country-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 15px;
+  border-radius: var(--border-radius);
+  background-color: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.country-item:hover {
+  background-color: #f1f1f1;
+  transform: translateY(-2px);
+}
+
+.country-item.visited {
+  background-color: #e3f2fd;
+  border-left: 3px solid var(--secondary-color);
+}
+
+.country-status {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: var(--grey-color);
+}
+
+.country-item.visited .country-status {
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 /* Responsive adjustments */

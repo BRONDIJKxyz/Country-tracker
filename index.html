@@ -79,6 +79,7 @@
         </div>
 
         <div class="actions">
+            <button id="view-countries-list" class="button secondary">View Countries List</button>
             <button id="reset-button" class="button secondary">Reset Map</button>
             <button id="done-button" class="button primary">Done</button>
         </div>
@@ -111,6 +112,22 @@
                     <div class="share-buttons">
                         <button id="download-map" class="button">Download Image</button>
                         <button id="copy-link" class="button">Copy Link</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Countries list modal (hidden by default) -->
+        <div class="modal" id="countries-list-modal">
+            <div class="modal-content countries-list-content">
+                <div class="modal-header">
+                    <h2>Countries List</h2>
+                    <span class="close-countries-list">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p class="countries-list-instructions">Click on a country to mark it as visited/not visited</p>
+                    <div id="countries-list-container">
+                        <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
             </div>

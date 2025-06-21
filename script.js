@@ -4,14 +4,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const state = {
     visitedCountries: new Set(),
     mapSVG: null,
-    mapWidth: 960,
-    mapHeight: 500,
+    mapWidth: 1200,
+    mapHeight: 700,
     mapTransform: { k: 1, x: 0, y: 0 }, // Zoom and pan state
     countryData: null,
     countryElements: {},
     flagMarkers: {},
     path: null, // Store path globally for access in other functions
-    projection: null // Store projection globally
+    projection: null, // Store projection globally
+    allCountries: [] // Store all countries for the list view
   };
 
   // Initialize the app
@@ -26,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.close-modal').addEventListener('click', closeSummary);
   document.getElementById('download-map').addEventListener('click', downloadMap);
   document.getElementById('copy-link').addEventListener('click', copyLink);
+  document.getElementById('view-countries-list').addEventListener('click', showCountriesList);
+  document.querySelector('.close-countries-list').addEventListener('click', closeCountriesList);
 
   /**
    * Initializes the interactive world map using D3.js
@@ -80,11 +83,29 @@ document.addEventListener('DOMContentLoaded', () => {
           .on('mouseout', handleCountryMouseOut)
           .on('click', handleCountryClick);
         
-        // Store country elements for later reference
+        // Store country elements for later reference and populate allCountries
         countries.features.forEach(feature => {
-          const countryName = feature.properties.name;
+          let countryName = feature.properties.name;
+          if (WorldData.COUNTRY_NAME_MAP[countryName]) {
+            countryName = WorldData.COUNTRY_NAME_MAP[countryName];
+          }
+          
           state.countryElements[countryName] = document.getElementById(`country-${feature.id}`);
+          
+          // Only add to allCountries if it's in our continent data
+          const continent = WorldData.COUNTRY_TO_CONTINENT[countryName];
+          if (continent) {
+            state.allCountries.push({
+              name: countryName,
+              continent: continent,
+              id: feature.id,
+              visited: false
+            });
+          }
         });
+        
+        // Sort countries alphabetically
+        state.allCountries.sort((a, b) => a.name.localeCompare(b.name));
       })
       .catch(error => console.error('Error loading map data:', error));
     
@@ -147,6 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
         state.flagMarkers[countryName].remove();
         delete state.flagMarkers[countryName];
       }
+      
+      // Update the corresponding country in allCountries
+      const countryIndex = state.allCountries.findIndex(c => c.name === countryName);
+      if (countryIndex !== -1) {
+        state.allCountries[countryIndex].visited = false;
+      }
     } else {
       state.visitedCountries.add(countryName);
       event.currentTarget.classList.add('visited');
@@ -163,10 +190,16 @@ document.addEventListener('DOMContentLoaded', () => {
           .attr('y', centroid[1])
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'central')
-          .attr('font-size', '16px')
-          .text('🚩');
+          .attr('font-size', '18px')
+          .text('🏁');
         
         state.flagMarkers[countryName] = flag.node();
+      }
+      
+      // Update the corresponding country in allCountries
+      const countryIndex = state.allCountries.findIndex(c => c.name === countryName);
+      if (countryIndex !== -1) {
+        state.allCountries[countryIndex].visited = true;
       }
     }
 
@@ -191,9 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('Updating stats:', visitedCount, 'countries,', globalPercent + '%');
     
-    // Update global stats
-    document.getElementById('countries-visited').textContent = visitedCount;
-    document.getElementById('global-percent').textContent = `${globalPercent}%`;
+    // Update global stats - ensure this happens immediately
+    requestAnimationFrame(() => {
+      document.getElementById('countries-visited').textContent = visitedCount;
+      document.getElementById('global-percent').textContent = `${globalPercent}%`;
+    });
     
     // Update continent stats
     Object.keys(WorldData.CONTINENTS).forEach(continentName => {
@@ -425,4 +460,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check for shared data when page loads
   checkForSharedData();
+  
+  /**
+   * Shows the countries list modal
+   */
+  function showCountriesList() {
+    // Populate the countries list
+    const countriesList = document.getElementById('countries-list-container');
+    countriesList.innerHTML = '';
+    
+    // Group countries by continent
+    const continentGroups = {};
+    Object.keys(WorldData.CONTINENTS).forEach(continent => {
+      continentGroups[continent] = [];
+    });
+    
+    state.allCountries.forEach(country => {
+      if (continentGroups[country.continent]) {
+        continentGroups[country.continent].push(country);
+      }
+    });
+    
+    // Create continent sections
+    Object.keys(continentGroups).forEach(continent => {
+      const continentSection = document.createElement('div');
+      continentSection.className = 'continent-section';
+      
+      const continentHeader = document.createElement('h3');
+      continentHeader.textContent = continent;
+      continentHeader.style.color = WorldData.CONTINENTS[continent].color;
+      continentSection.appendChild(continentHeader);
+      
+      const countriesGrid = document.createElement('div');
+      countriesGrid.className = 'countries-grid';
+      
+      continentGroups[continent].forEach(country => {
+        const countryItem = document.createElement('div');
+        countryItem.className = 'country-item';
+        if (country.visited) {
+          countryItem.classList.add('visited');
+        }
+        
+        const countryName = document.createElement('span');
+        countryName.textContent = country.name;
+        
+        const countryStatus = document.createElement('span');
+        countryStatus.className = 'country-status';
+        countryStatus.textContent = country.visited ? '🏁 Visited' : '⬜ Not visited';
+        
+        countryItem.appendChild(countryName);
+        countryItem.appendChild(countryStatus);
+        
+        // Add click handler to toggle visited status from the list
+        countryItem.addEventListener('click', () => {
+          const mapCountry = state.countryData.features.find(f => {
+            let name = f.properties.name;
+            if (WorldData.COUNTRY_NAME_MAP[name]) {
+              name = WorldData.COUNTRY_NAME_MAP[name];
+            }
+            return name === country.name;
+          });
+          
+          if (mapCountry) {
+            const countryElement = document.getElementById(`country-${mapCountry.id}`);
+            if (countryElement) {
+              // Simulate click on the map
+              const event = new MouseEvent('click');
+              countryElement.dispatchEvent(event);
+              
+              // Update the list item
+              countryItem.classList.toggle('visited');
+              countryStatus.textContent = country.visited ? '🏁 Visited' : '⬜ Not visited';
+            }
+          }
+        });
+        
+        countriesGrid.appendChild(countryItem);
+      });
+      
+      continentSection.appendChild(countriesGrid);
+      countriesList.appendChild(continentSection);
+    });
+    
+    // Show the modal
+    document.getElementById('countries-list-modal').style.display = 'block';
+  }
+  
+  /**
+   * Closes the countries list modal
+   */
+  function closeCountriesList() {
+    document.getElementById('countries-list-modal').style.display = 'none';
+  }
 });
